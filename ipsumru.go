@@ -2,23 +2,20 @@ package ipsumru
 
 import (
 	_ "embed"
+	"fmt"
 	"math/rand"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 )
 
-// https://wortschatz.uni-leipzig.de/en/download/Russian?utm_source=chatgpt.com
-
-//go:embed data/rus_news_2023_1M-sentences.txt
-var news2023 string
-
-//go:embed data/rus_news_2024_1M-sentences.txt
-var news2024 string
-
 type SentenceGenerator struct {
 	sync.Mutex
-	texts []string   // исходные тексты (2023 + 2024)
-	lines []lineSpan // индексы строк
+	news2023 string
+	news2024 string
+	texts    []string   // исходные тексты (2023 + 2024)
+	lines    []lineSpan // индексы строк
 }
 
 type lineSpan struct {
@@ -27,12 +24,36 @@ type lineSpan struct {
 	end int // конец строки
 }
 
-func NewSentenceGenerator() *SentenceGenerator {
-	g := &SentenceGenerator{
-		texts: []string{news2023, news2024},
+func NewSentenceGenerator() (*SentenceGenerator, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("could not get home dir: %v", err)
 	}
+	fileName2023 := filepath.Join(homeDir, nameNews2023)
+	fileName2024 := filepath.Join(homeDir, nameNews2024)
+
+	if err = ensureFile(url2023, fileName2023); err != nil {
+		return nil, err
+	}
+	if err = ensureFile(url2024, fileName2024); err != nil {
+		return nil, err
+	}
+	g := &SentenceGenerator{
+		texts: []string{nameNews2023, nameNews2024},
+	}
+	b, err := os.ReadFile(fileName2023)
+	if err != nil {
+		return nil, fmt.Errorf("could not read file %s: %w", fileName2023, err)
+	}
+	g.news2023 = string(b)
+	b, err = os.ReadFile(fileName2024)
+	if err != nil {
+		return nil, fmt.Errorf("could not read file %s: %w", fileName2024, err)
+	}
+	g.news2023 = string(b)
+
 	g.reload()
-	return g
+	return g, nil
 }
 
 // reload строит индексы строк заново
