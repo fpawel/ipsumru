@@ -38,8 +38,19 @@ func NewSentenceGenerator() (*SentenceGenerator, error) {
 	if err = ensureFile(url2024, fileName2024); err != nil {
 		return nil, err
 	}
+
+	news2023content, err := os.ReadFile(fileName2023)
+	if err != nil {
+		return nil, fmt.Errorf("could not read news2023 file: %v", err)
+	}
+
+	news2024content, err := os.ReadFile(fileName2023)
+	if err != nil {
+		return nil, fmt.Errorf("could not read news2024 file: %v", err)
+	}
+
 	g := &SentenceGenerator{
-		texts: []string{nameNews2023, nameNews2024},
+		texts: []string{string(news2023content), string(news2024content)},
 	}
 	b, err := os.ReadFile(fileName2023)
 	if err != nil {
